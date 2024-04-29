@@ -1,16 +1,13 @@
 package simpledb.common;
 
-import simpledb.common.Type;
-import simpledb.storage.DbFile;
-import simpledb.storage.HeapFile;
-import simpledb.storage.TupleDesc;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import simpledb.storage.DbFile;
+import simpledb.storage.HeapFile;
+import simpledb.storage.TupleDesc;
 
 /**
  * The Catalog keeps track of all available tables in the database and their
@@ -23,12 +20,20 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Catalog {
 
+    Map<Integer, String> idToName;
+    Map<String, Integer> NameToid;
+    Map<Integer, DbFile> idToDbFile;
+    Map<Integer, String> idToPKey;
+    
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
-        // some code goes here
+        idToName = new HashMap<>();
+        NameToid = new HashMap<>();
+        idToDbFile = new HashMap<>();
+        idToPKey = new HashMap<>();
     }
 
     /**
@@ -41,7 +46,11 @@ public class Catalog {
      * @param pkeyField the name of the primary key field
      */
     public void addTable(DbFile file, String name, String pkeyField) {
-        // some code goes here
+        int id = file.getId();
+        idToName.put(id, name);
+        NameToid.put(name, id);
+        idToDbFile.put(id, file);
+        idToPKey.put(id, pkeyField);
     }
 
     public void addTable(DbFile file, String name) {
@@ -64,8 +73,11 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
-        // some code goes here
-        return 0;
+        int id = NameToid.getOrDefault(name, -1);
+        if (id == -1){
+            throw new NoSuchElementException(String.format("catalog.getTableId: no corresponding tableid for name %s", name)); 
+        }
+        return id;
     }
 
     /**
@@ -75,8 +87,7 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        return idToDbFile.get(tableid).getTupleDesc();
     }
 
     /**
@@ -86,28 +97,27 @@ public class Catalog {
      *     function passed to addTable
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        return idToDbFile.get(tableid);
     }
 
     public String getPrimaryKey(int tableid) {
-        // some code goes here
-        return null;
+        return idToPKey.getOrDefault(tableid, "");
     }
 
     public Iterator<Integer> tableIdIterator() {
-        // some code goes here
-        return null;
+        return idToName.keySet().iterator();
     }
 
     public String getTableName(int id) {
-        // some code goes here
-        return null;
+        return idToName.get(id);
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
-        // some code goes here
+        idToDbFile.clear();
+        idToName.clear();
+        idToPKey.clear();
+        NameToid.clear();
     }
     
     /**
