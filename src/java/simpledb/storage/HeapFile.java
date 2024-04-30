@@ -1,14 +1,12 @@
 package simpledb.storage;
 
+import java.io.*;
+import java.util.*;
 import simpledb.common.Database;
 import simpledb.common.DbException;
-import simpledb.common.Debug;
 import simpledb.common.Permissions;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
-
-import java.io.*;
-import java.util.*;
 
 /**
  * HeapFile is an implementation of a DbFile that stores a collection of tuples
@@ -22,6 +20,11 @@ import java.util.*;
  */
 public class HeapFile implements DbFile {
 
+    File f;
+    TupleDesc td;
+    int maxpages;
+    int id;
+    final int pagesize = Database.getBufferPool().getPageSize();
     /**
      * Constructs a heap file backed by the specified file.
      * 
@@ -30,7 +33,14 @@ public class HeapFile implements DbFile {
      *            file.
      */
     public HeapFile(File f, TupleDesc td) {
-        // some code goes here
+        this.f = f;
+        this.td = td;
+        if (f == null){
+            maxpages = 0;
+        } else {
+            maxpages = (int) Math.ceil(f.length() / (double) this.pagesize);
+        }
+        id = f.getAbsoluteFile().hashCode();
     }
 
     /**
@@ -39,8 +49,7 @@ public class HeapFile implements DbFile {
      * @return the File backing this HeapFile on disk.
      */
     public File getFile() {
-        // some code goes here
-        return null;
+        return f;
     }
 
     /**
@@ -53,8 +62,7 @@ public class HeapFile implements DbFile {
      * @return an ID uniquely identifying this HeapFile.
      */
     public int getId() {
-        // some code goes here
-        throw new UnsupportedOperationException("implement this");
+        return id;
     }
 
     /**
@@ -63,13 +71,23 @@ public class HeapFile implements DbFile {
      * @return TupleDesc of this DbFile.
      */
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        throw new UnsupportedOperationException("implement this");
+        return td;
     }
 
     // see DbFile.java for javadocs
-    public Page readPage(PageId pid) {
-        // some code goes here
+    @Override public Page readPage(PageId pid) {
+
+        byte[] bytes = new byte[this.pagesize];
+        try (RandomAccessFile raf = new RandomAccessFile(this.f, "r")) {
+            raf.seek(pid.getPageNumber() * this.pagesize);
+            int numBytesRead = raf.read(bytes);
+            return new HeapPage((HeapPageId) pid, bytes);
+
+        } catch (FileNotFoundException e) {
+            System.out.println("Error in HeapFile.java: File not found: " + e.getMessage());
+        } catch (IOException e) {
+            System.out.println("Error in HeapFile.java: IO error: " + e.getMessage());
+        }
         return null;
     }
 
@@ -83,8 +101,7 @@ public class HeapFile implements DbFile {
      * Returns the number of pages in this HeapFile.
      */
     public int numPages() {
-        // some code goes here
-        return 0;
+        return maxpages;
     }
 
     // see DbFile.java for javadocs
@@ -102,11 +119,68 @@ public class HeapFile implements DbFile {
         return null;
         // not necessary for lab1
     }
+    public class HeapFileIterator implements DbFileIterator{
+        private int page_number = 0;
+        private Iterator<Tuple> page_iterator;
+        TransactionId tid;
 
+        private void gEtnEXtiTERATOr(){
+            try {
+                page_iterator = ((HeapPage) Database.getBufferPool().getPage(tid, (new HeapPageId(id, page_number)), Permissions.READ_ONLY)).iterator();
+            } catch (TransactionAbortedException e) {
+                System.out.println("Error in HeapFile.java Iterator Error: " + e.getMessage());
+            } catch (DbException e) {
+                System.out.println("Error in HeapFile.java Iterator Error: " + e.getMessage());
+            }
+        }
+
+        public HeapFileIterator(TransactionId tid) {
+            this.tid = tid;
+        }
+
+        @Override public void open(){
+            page_number = 0;
+            gEtnEXtiTERATOr();
+        }
+        
+        @Override public boolean hasNext() {
+            return (page_number < maxpages) || page_iterator.hasNext();
+        }
+
+        @Override public Tuple next() throws NoSuchElementException{
+            if (!this.hasNext()){
+                throw new NoSuchElementException("Error in HeapFile Iterator: end of the list bozo");
+            }
+
+            if (page_iterator.hasNext()){
+                return page_iterator.next();
+            }
+
+            page_number += 1;
+            gEtnEXtiTERATOr();
+            return this.next();
+        }
+
+        @Override public void rewind() {
+            page_number = 0;
+            try {
+                page_iterator = ((HeapPage) Database.getBufferPool().getPage(tid, (new HeapPageId(id, page_number)), Permissions.READ_ONLY)).iterator();
+            } catch (TransactionAbortedException e) {
+                System.out.println("Error in HeapFile.java Iterator Error: " + e.getMessage());
+            } catch (DbException e) {
+                System.out.println("Error in HeapFile.java Iterator Error: " + e.getMessage());
+            }
+        }
+
+        @Override public void close() {
+
+        }
+
+    };
     // see DbFile.java for javadocs
+    @Override
     public DbFileIterator iterator(TransactionId tid) {
-        // some code goes here
-        return null;
+        return new HeapFileIterator(tid);
     }
 
 }
