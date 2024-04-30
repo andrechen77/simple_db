@@ -87,7 +87,11 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        return idToDbFile.get(tableid).getTupleDesc();
+        DbFile dbFile = idToDbFile.get(tableid);
+        if (dbFile == null){
+            throw new NoSuchElementException("Error in Catalog: calling tableid on non-existant tableid");
+        }
+        return dbFile.getTupleDesc();
     }
 
     /**

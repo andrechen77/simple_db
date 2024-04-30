@@ -49,6 +49,7 @@ public class BufferPool {
      */
     public BufferPool(int numPages) {
         this.pages = new ArrayList<>(Collections.nCopies(numPages, null));
+        this.pageIdToIndex = new HashMap<>();
     }
 
     public static int getPageSize() {

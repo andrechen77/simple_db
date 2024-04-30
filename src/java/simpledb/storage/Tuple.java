@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Tuple maintains information about the contents of a tuple. Tuples have a
@@ -29,6 +30,15 @@ public class Tuple implements Serializable {
         this.recordId = null;
         this.tupleDesc = td;
         this.fields = new ArrayList<>(Collections.nCopies(td.numFields(), null));
+    }
+
+    public Tuple(TupleDesc td, Iterator<Field> fields) {
+        this.recordId = null;
+        this.tupleDesc = td;
+        this.fields = new ArrayList<>();
+        while (fields.hasNext()) {
+            this.fields.add(fields.next());
+        }
     }
 
     /**

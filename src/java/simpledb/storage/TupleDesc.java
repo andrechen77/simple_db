@@ -109,6 +109,17 @@ public class TupleDesc implements Serializable {
         this.tdItems = new ArrayList<>(tdItems);
     }
 
+    public TupleDesc(TupleDesc old, String prefix) {
+        this(
+            old.tdItems
+                .stream()
+                .map(oldTdItem -> new TDItem(
+                    oldTdItem.fieldType,
+                    prefix + "." + oldTdItem.fieldName
+                )).collect(Collectors.toList())
+        );
+    }
+
     /**
      * @return the number of fields in this TupleDesc
      */

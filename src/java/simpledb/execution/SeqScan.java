@@ -21,6 +21,7 @@ public class SeqScan implements OpIterator {
     private TransactionId tid;
     private int tableId;
     private String tableAlias;
+    private TupleDesc tupleDesc;
     private DbFileIterator dbFileIterator; // can be null
     /**
      * Creates a sequential scan over the specified table as a part of the
@@ -42,7 +43,12 @@ public class SeqScan implements OpIterator {
         this.tid = tid;
         this.tableId = tableid;
         this.tableAlias = tableAlias;
+        this.createTupleDesc();
         this.dbFileIterator = null;
+    }
+
+    private void createTupleDesc() {
+        this.tupleDesc = new TupleDesc(Database.getCatalog().getTupleDesc(tableId), tableAlias);
     }
 
     /**
@@ -76,6 +82,7 @@ public class SeqScan implements OpIterator {
     public void reset(int tableid, String tableAlias) {
         this.tableId = tableid;
         this.tableAlias = tableAlias;
+        this.createTupleDesc();
     }
 
     public SeqScan(TransactionId tid, int tableId) {
@@ -97,16 +104,19 @@ public class SeqScan implements OpIterator {
      *         prefixed with the tableAlias string from the constructor.
      */
     public TupleDesc getTupleDesc() {
-        return Database.getCatalog().getTupleDesc(tableId);
+        return this.tupleDesc;
     }
 
     public boolean hasNext() throws TransactionAbortedException, DbException {
-        return this.dbFileIterator.hasNext();
+        return this.dbFileIterator != null && this.dbFileIterator.hasNext();
     }
 
     public Tuple next() throws NoSuchElementException,
             TransactionAbortedException, DbException {
-        return this.dbFileIterator.next();
+        Tuple result = this.dbFileIterator.next();
+        result = new Tuple(this.tupleDesc, result.fields());
+        System.out.println(result.toString());
+        return result;
     }
 
     public void close() {
