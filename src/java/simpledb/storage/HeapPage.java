@@ -300,9 +300,9 @@ public class HeapPage implements Page {
     public int getNumEmptySlots() {
         int sum = 0;
         for (byte b : this.header) {
-            sum += Integer.bitCount(b);
+            sum += Integer.bitCount(Byte.toUnsignedInt(b));
         }
-        return sum;
+        return this.numSlots - sum;
     }
 
     /**
@@ -335,7 +335,7 @@ public class HeapPage implements Page {
             private int currentIndex = findNextTuple(0);
 
             private int findNextTuple(int start) {
-                while (!HeapPage.this.isSlotUsed(start) && start < HeapPage.this.numSlots) {
+                while (start < HeapPage.this.numSlots && !HeapPage.this.isSlotUsed(start)) {
                     ++start;
                 }
                 return start;
@@ -349,7 +349,9 @@ public class HeapPage implements Page {
                 if (!this.hasNext()) {
                     throw new NoSuchElementException();
                 }
-                return HeapPage.this.tuples[currentIndex];
+                int index = this.currentIndex;
+                this.currentIndex = findNextTuple(this.currentIndex + 1);
+                return HeapPage.this.tuples[index];
             }
         };
     }

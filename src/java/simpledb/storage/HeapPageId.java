@@ -55,7 +55,9 @@ public class HeapPageId implements PageId {
      *   ids are the same)
      */
     public boolean equals(Object o) {
-        assert o instanceof PageId;
+        if (!(o instanceof PageId)) {
+            return false;
+        }
         PageId other = (PageId) o;
         return this.tableId == other.getTableId() && this.pageNumber == other.getPageNumber();
     }
