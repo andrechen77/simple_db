@@ -18,11 +18,11 @@ public class SeqScan implements OpIterator {
 
     private static final long serialVersionUID = 1L;
 
-    TransactionId tid;
-    int tableid;
-    String tableAlias;
-    DbFileIterator dbFileIterator;
-    /** 
+    private TransactionId tid;
+    private int tableId;
+    private String tableAlias;
+    private DbFileIterator dbFileIterator; // can be null
+    /**
      * Creates a sequential scan over the specified table as a part of the
      * specified transaction.
      *
@@ -40,8 +40,9 @@ public class SeqScan implements OpIterator {
      */
     public SeqScan(TransactionId tid, int tableid, String tableAlias) {
         this.tid = tid;
-        this.tableid = tableid;
+        this.tableId = tableid;
         this.tableAlias = tableAlias;
+        this.dbFileIterator = null;
     }
 
     /**
@@ -50,14 +51,13 @@ public class SeqScan implements OpIterator {
      *       be the actual name of the table in the catalog of the database
      * */
     public String getTableName() {
-        return Database.getCatalog().getTableName(tableid);
+        return Database.getCatalog().getTableName(tableId);
     }
 
     /**
      * @return Return the alias of the table this operator scans.
      * */
-    public String getAlias()
-    {
+    public String getAlias() {
         return tableAlias;
     }
 
@@ -74,7 +74,7 @@ public class SeqScan implements OpIterator {
      *            tableAlias.null, or null.null).
      */
     public void reset(int tableid, String tableAlias) {
-        this.tableid = tableid;
+        this.tableId = tableid;
         this.tableAlias = tableAlias;
     }
 
@@ -83,7 +83,7 @@ public class SeqScan implements OpIterator {
     }
 
     public void open() throws DbException, TransactionAbortedException {
-        dbFileIterator = Database.getCatalog().getDatabaseFile(tableid).iterator(tid);
+        this.dbFileIterator = Database.getCatalog().getDatabaseFile(tableId).iterator(tid);
     }
 
     /**
@@ -97,24 +97,23 @@ public class SeqScan implements OpIterator {
      *         prefixed with the tableAlias string from the constructor.
      */
     public TupleDesc getTupleDesc() {
-        return Database.getCatalog().getTupleDesc(tableid);
+        return Database.getCatalog().getTupleDesc(tableId);
     }
 
     public boolean hasNext() throws TransactionAbortedException, DbException {
-        return dbFileIterator.hasNext();
+        return this.dbFileIterator.hasNext();
     }
 
     public Tuple next() throws NoSuchElementException,
             TransactionAbortedException, DbException {
-        return dbFileIterator.next();
+        return this.dbFileIterator.next();
     }
 
     public void close() {
-        dbFileIterator.close();
+        this.dbFileIterator.close();
     }
 
-    public void rewind() throws DbException, NoSuchElementException,
-            TransactionAbortedException {
-        dbFileIterator.rewind(); 
+    public void rewind() throws DbException, NoSuchElementException, TransactionAbortedException {
+        this.dbFileIterator.rewind();
     }
 }
