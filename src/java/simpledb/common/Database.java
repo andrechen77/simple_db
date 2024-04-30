@@ -1,10 +1,9 @@
 package simpledb.common;
 
-import simpledb.storage.BufferPool;
-import simpledb.storage.LogFile;
-
 import java.io.*;
 import java.util.concurrent.atomic.AtomicReference;
+import simpledb.storage.BufferPool;
+import simpledb.storage.LogFile;
 
 /**
  * Database is a class that initializes several static variables used by the
