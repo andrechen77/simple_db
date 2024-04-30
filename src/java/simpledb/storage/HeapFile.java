@@ -88,11 +88,10 @@ public class HeapFile implements DbFile {
             raf.read(bytes);
             return new HeapPage(new HeapPageId(this.id, pageNum), bytes);
         } catch (FileNotFoundException e) {
-            System.out.println("Error in HeapFile.java: File not found: " + e.getMessage());
+            throw new IllegalArgumentException("Error in HeapFile.java: File not found", e);
         } catch (IOException e) {
-            System.out.println("Error in HeapFile.java: IO error: " + e.getMessage());
+            throw new IllegalArgumentException("Error in HeapFile.java: IO error", e);
         }
-        return null;
     }
 
     // see DbFile.java for javadocs
@@ -130,20 +129,11 @@ public class HeapFile implements DbFile {
 
         private Iterator<Tuple> getTupleIterator(int pageNum) throws TransactionAbortedException, DbException {
             if (pageNum >= maxPages) {
-                System.out.println("returning null");
                 return null;
             }
 
-            try {
-                Page page = Database.getBufferPool().getPage(tid, (new HeapPageId(id, pageNum)), Permissions.READ_ONLY);
-                return ((HeapPage) page).iterator(); // TODO what if it's not
-            } catch (TransactionAbortedException e) {
-                System.out.println("Error in HeapFile.java Iterator Error: " + e.getMessage());
-                throw e;
-            } catch (DbException e) {
-                System.out.println("Error in HeapFile.java Iterator Error: " + e.getMessage());
-                throw e;
-            }
+            Page page = Database.getBufferPool().getPage(tid, (new HeapPageId(id, pageNum)), Permissions.READ_ONLY);
+            return ((HeapPage) page).iterator(); // TODO what if it's not
         }
 
         private void advanceToNext() throws TransactionAbortedException, DbException {
@@ -167,7 +157,6 @@ public class HeapFile implements DbFile {
 
         @Override public boolean hasNext() {
             boolean result =  this.currentPageIter != null && currentPageNum < maxPages;
-            System.out.println("heapfile: returned " + result);
             return result;
         }
 

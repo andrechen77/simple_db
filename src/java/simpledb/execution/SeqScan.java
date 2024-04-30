@@ -91,6 +91,7 @@ public class SeqScan implements OpIterator {
 
     public void open() throws DbException, TransactionAbortedException {
         this.dbFileIterator = Database.getCatalog().getDatabaseFile(tableId).iterator(tid);
+        this.dbFileIterator.open();
     }
 
     /**
@@ -115,7 +116,6 @@ public class SeqScan implements OpIterator {
             TransactionAbortedException, DbException {
         Tuple result = this.dbFileIterator.next();
         result = new Tuple(this.tupleDesc, result.fields());
-        System.out.println(result.toString());
         return result;
     }
 
