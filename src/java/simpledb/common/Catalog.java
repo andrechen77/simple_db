@@ -1,16 +1,13 @@
 package simpledb.common;
 
-import simpledb.common.Type;
-import simpledb.storage.DbFile;
-import simpledb.storage.HeapFile;
-import simpledb.storage.TupleDesc;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import simpledb.storage.DbFile;
+import simpledb.storage.HeapFile;
+import simpledb.storage.TupleDesc;
 
 /**
  * The Catalog keeps track of all available tables in the database and their
@@ -18,17 +15,25 @@ import java.util.concurrent.ConcurrentHashMap;
  * For now, this is a stub catalog that must be populated with tables by a
  * user program before it can be used -- eventually, this should be converted
  * to a catalog that reads a catalog table from disk.
- * 
+ *
  * @Threadsafe
  */
 public class Catalog {
+
+    Map<Integer, String> idToName;
+    Map<String, Integer> nameToId;
+    Map<Integer, DbFile> idToDbFile;
+    Map<Integer, String> idToPKey;
 
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
-        // some code goes here
+        idToName = new HashMap<>();
+        nameToId = new HashMap<>();
+        idToDbFile = new HashMap<>();
+        idToPKey = new HashMap<>();
     }
 
     /**
@@ -41,7 +46,11 @@ public class Catalog {
      * @param pkeyField the name of the primary key field
      */
     public void addTable(DbFile file, String name, String pkeyField) {
-        // some code goes here
+        int id = file.getId();
+        idToName.put(id, name);
+        nameToId.put(name, id);
+        idToDbFile.put(id, file);
+        idToPKey.put(id, pkeyField);
     }
 
     public void addTable(DbFile file, String name) {
@@ -64,8 +73,11 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
-        // some code goes here
-        return 0;
+        Integer id = nameToId.get(name);
+        if (id == null){
+            throw new NoSuchElementException(String.format("catalog.getTableId: no corresponding tableid for name %s", name));
+        }
+        return id;
     }
 
     /**
@@ -75,8 +87,7 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        return idToDbFile.get(tableid).getTupleDesc();
     }
 
     /**
@@ -86,30 +97,31 @@ public class Catalog {
      *     function passed to addTable
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        return idToDbFile.get(tableid);
     }
 
     public String getPrimaryKey(int tableid) {
-        // some code goes here
-        return null;
+        String result = idToPKey.get(tableid);
+        assert result != null;
+        return result;
     }
 
     public Iterator<Integer> tableIdIterator() {
-        // some code goes here
-        return null;
+        return idToName.keySet().iterator();
     }
 
     public String getTableName(int id) {
-        // some code goes here
-        return null;
+        return idToName.get(id);
     }
-    
+
     /** Delete all tables from the catalog */
     public void clear() {
-        // some code goes here
+        idToDbFile.clear();
+        idToName.clear();
+        idToPKey.clear();
+        nameToId.clear();
     }
-    
+
     /**
      * Reads the schema from a file and creates the appropriate tables in the database.
      * @param catalogFile
@@ -119,7 +131,7 @@ public class Catalog {
         String baseFolder=new File(new File(catalogFile).getAbsolutePath()).getParent();
         try {
             BufferedReader br = new BufferedReader(new FileReader(catalogFile));
-            
+
             while ((line = br.readLine()) != null) {
                 //assume line is of the format name (field type, field type, ...)
                 String name = line.substring(0, line.indexOf("(")).trim();
